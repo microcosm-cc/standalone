@@ -10,6 +10,9 @@ Vagrant.configure(VAGRANTFILE_API_VERSION) do |config|
   # please see the online documentation at vagrantup.com.
 
   config.vm.box = "ubuntu/trusty64"
+  config.vm.hostname = "dev.microco.sm"
+  # Workaround for vagrant 1.5.1 (https://github.com/mitchellh/vagrant/issues/3271)
+  config.vm.provision "shell", inline: "hostname dev.microco.sm"
 
   # Create a forwarded port mapping which allows access to a specific port
   # within the machine from a port on the host machine. In the example below,
