@@ -1,3 +1,5 @@
-user {'matt':
-      ensure => present,
+node 'dev.microco.sm' {
+
+    class {'postgresql::server':}
+
 }
