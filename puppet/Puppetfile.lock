@@ -18,12 +18,12 @@ FORGE
 GIT
   remote: git://github.com/microcosm-cc/puppet-microcosm.git
   ref: master
-  sha: 0080c846ae67a79cbcc4929e9fba267ddf289285
+  sha: bcbdd3d45abaa99a1bd470ddc060facbf0c642c1
   specs:
     puppet-microcosm (0.0.1)
+      jfryman-nginx (>= 0.0.10)
 
 DEPENDENCIES
-  jfryman-nginx (>= 0)
   puppet-microcosm (>= 0)
   puppetlabs-postgresql (>= 0)
 

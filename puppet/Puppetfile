@@ -13,8 +13,6 @@ forge "https://forgeapi.puppetlabs.com"
 # mod 'puppetlabs-concat'
 # mod 'puppetlabs-stdlib'
 
-mod 'jfryman-nginx'
-
 mod 'puppetlabs-postgresql'
 
 # A module from git
