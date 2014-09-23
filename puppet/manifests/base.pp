@@ -16,4 +16,27 @@ node 'dev.microco.sm' {
 
     include microcosm
     include microcosm::api
+
+    user { 'deployment':
+        ensure     => 'present',
+        comment    => 'Deployment User',
+        managehome => true,
+        gid        => 'microcosm',
+        shell      => '/bin/bash',
+        require    => Group['microcosm'],
+    }
+
+    ssh_authorized_key { 'deployment':
+        ensure  => present,
+        type    => 'ssh-rsa',
+        key     => $deployment_key,
+        name    => 'deployment',
+        user    => 'deployment',
+        require => User['deployment'],
+    }
+
+    sudo::conf { 'deployment':
+        priority => 10,
+        content  => 'deployment ALL=(ALL) NOPASSWD: ALL',
+    }
 }

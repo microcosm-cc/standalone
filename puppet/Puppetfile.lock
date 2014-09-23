@@ -9,21 +9,29 @@ FORGE
       puppetlabs-stdlib (>= 2.2.1)
     puppetlabs-concat (1.1.1)
       puppetlabs-stdlib (< 5.0.0, >= 3.2.0)
+    puppetlabs-firewall (1.1.3)
     puppetlabs-postgresql (4.0.0)
       puppetlabs-apt (< 2.0.0, >= 1.1.0)
       puppetlabs-concat (< 2.0.0, >= 1.1.0)
       puppetlabs-stdlib (~> 4.0)
     puppetlabs-stdlib (4.3.2)
+    saz-memcached (2.6.0)
+      puppetlabs-firewall (>= 0.1.0)
+      puppetlabs-stdlib (>= 3.2.0)
+    saz-sudo (3.0.8)
+      puppetlabs-stdlib (>= 2.3.0)
 
 GIT
   remote: git://github.com/microcosm-cc/puppet-microcosm.git
   ref: master
-  sha: bcbdd3d45abaa99a1bd470ddc060facbf0c642c1
+  sha: cdba0b3f612089316d2ee77a45200322a8259c97
   specs:
     puppet-microcosm (0.0.1)
       jfryman-nginx (>= 0.0.10)
+      saz-memcached (>= 2.6.0)
 
 DEPENDENCIES
   puppet-microcosm (>= 0)
   puppetlabs-postgresql (>= 0)
+  saz-sudo (>= 0)
 
