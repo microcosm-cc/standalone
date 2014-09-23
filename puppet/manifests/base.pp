@@ -2,6 +2,7 @@ import "secret.pp"
 
 node 'dev.microco.sm' {
 
+    ### Database ###
     class {'postgresql::server':
         ip_mask_allow_all_users    => '0.0.0.0/0',
         listen_addresses           => '*',
@@ -13,4 +14,6 @@ node 'dev.microco.sm' {
         password => $microcosm_pg_pass,
     }
 
+    include microcosm
+    include microcosm::api
 }

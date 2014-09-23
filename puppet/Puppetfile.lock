@@ -15,7 +15,15 @@ FORGE
       puppetlabs-stdlib (~> 4.0)
     puppetlabs-stdlib (4.3.2)
 
+GIT
+  remote: git://github.com/microcosm-cc/puppet-microcosm.git
+  ref: master
+  sha: 0080c846ae67a79cbcc4929e9fba267ddf289285
+  specs:
+    puppet-microcosm (0.0.1)
+
 DEPENDENCIES
   jfryman-nginx (>= 0)
+  puppet-microcosm (>= 0)
   puppetlabs-postgresql (>= 0)
 
