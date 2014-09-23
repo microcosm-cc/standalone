@@ -1,5 +1,23 @@
 import "secret.pp"
 
+$microcosm_environment = "dev"
+
+$microcosm_backend_port = "8080"
+$microcosm_domain = "microco.sm"
+
+$postgres_backend_private_ip = "127.0.0.1"
+$postgres_port = 5432
+$postgres_database = "microcosm"
+
+$memcached_api_backend_private_ip = "127.0.0.1"
+$memcached_api_backend_port = "11211"
+
+$elasticsearch_private_ip = "127.0.0.1"
+$elasticsearch_host = "9999"
+
+# URL to verify Persona assertions against
+$persona_verifier_url = "https://verifier.login.persona.org/verify"
+
 node 'dev.microco.sm' {
 
     ### Database ###
@@ -11,7 +29,7 @@ node 'dev.microco.sm' {
 
     postgresql::server::db { 'microcosm':
         user     => 'microcosm',
-        password => $microcosm_pg_pass,
+        password => $postgres_password,
     }
 
     include microcosm
