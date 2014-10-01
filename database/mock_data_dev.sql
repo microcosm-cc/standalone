@@ -47,7 +47,7 @@ SELECT *
 SELECT *
   FROM create_owned_site(
            'Microcosm test site', -- site title
-           'dev1', -- subdomain key
+           'dev', -- subdomain key
            1, --theme id
            1, -- user id
            'Frodo', -- profile name
