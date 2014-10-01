@@ -22,6 +22,7 @@ ALTER TABLE ONLY development.attribute_values DROP CONSTRAINT values_value_type_
 ALTER TABLE ONLY development.attribute_values DROP CONSTRAINT values_attribute_id_fkey;
 ALTER TABLE ONLY development.sites DROP CONSTRAINT sites_theme_id_fkey;
 ALTER TABLE ONLY development.site_options DROP CONSTRAINT site_options_site_id_fkey;
+ALTER TABLE ONLY development.site_stats DROP CONSTRAINT site_fkey;
 ALTER TABLE ONLY development.search_index DROP CONSTRAINT search_index_parent_item_type_id_fkey;
 ALTER TABLE ONLY development.search_index DROP CONSTRAINT search_index_item_type_id_fkey;
 ALTER TABLE ONLY development.roles DROP CONSTRAINT roles_site_id_fkey;
@@ -60,6 +61,7 @@ ALTER TABLE ONLY development.menus DROP CONSTRAINT menus_site_id_fkey;
 ALTER TABLE ONLY development.imported_items DROP CONSTRAINT imported_items_origin_id_fkey;
 ALTER TABLE ONLY development.imported_items DROP CONSTRAINT imported_items_item_type_id_fkey;
 ALTER TABLE ONLY development.import_origins DROP CONSTRAINT import_origins_site_id_fkey;
+ALTER TABLE ONLY development.ignores DROP CONSTRAINT ignores_profile_id_fkey;
 ALTER TABLE ONLY development.huddles DROP CONSTRAINT huddles_site_id_fkey;
 ALTER TABLE ONLY development.huddles DROP CONSTRAINT huddles_created_by_fkey;
 ALTER TABLE ONLY development.huddle_profiles DROP CONSTRAINT huddle_recipients_profile_id_fkey;
@@ -122,6 +124,7 @@ DROP TRIGGER conversations_search_index ON development.conversations;
 DROP TRIGGER conversations_flags ON development.conversations;
 DROP TRIGGER comments_search_index ON development.comments;
 DROP TRIGGER comments_flags ON development.comments;
+DROP INDEX development.watchers_profileanditemtype_idx;
 DROP INDEX development.watchers_itemtypeandid_idx;
 DROP INDEX development.views_itemtype_idx;
 DROP INDEX development.views_item_idx;
@@ -134,10 +137,14 @@ DROP INDEX development.searchindex_profileid_idx;
 DROP INDEX development.searchindex_parentitemtypeidandparentitemid_idx;
 DROP INDEX development.searchindex_itemtypeidanditemid_idx;
 DROP INDEX development.searchindex_documentvector_idx;
+DROP INDEX development.revisions_profile_idx;
+DROP INDEX development.revisions_comment_idx;
+DROP INDEX development.revisionlinks_linkid_idx;
 DROP INDEX development.read_profileitemtypeid_idx;
 DROP INDEX development.read_profileitemtypeandid_idx;
 DROP INDEX development.read_partial_order_idx;
 DROP INDEX development.read_partial_idx;
+DROP INDEX development.profiles_siteid_idx;
 DROP INDEX development.polls_microcosmid_idx;
 DROP INDEX development.polls_isdeleted_idx;
 DROP INDEX development.parent_modified_idx;
@@ -152,6 +159,9 @@ DROP INDEX development.ips_seen_idx;
 DROP INDEX development.ips_profileid_idx;
 DROP INDEX development.ips_ip_idx;
 DROP INDEX development.ips_action_idx;
+DROP INDEX development.imported_items_idx;
+DROP INDEX development.ignores_profile_id_idx;
+DROP INDEX development.ignores_item_type_id_item_id_idx;
 DROP INDEX development.huddles_profileid_idx;
 DROP INDEX development.huddles_huddleprofileid_idx;
 DROP INDEX development.flags_partial_item_idx;
@@ -159,6 +169,7 @@ DROP INDEX development.flags_partial_idx;
 DROP INDEX development.flags_parentitemtypeidandparentitemid_idx;
 DROP INDEX development.flags_microcosmid_idx;
 DROP INDEX development.flags_lastmodified_idx;
+DROP INDEX development.flags_lastmodified2_idx;
 DROP INDEX development.flags_deleted_idx;
 DROP INDEX development.flags_createdby_idx;
 DROP INDEX development.events_microcosmid_idx;
@@ -220,6 +231,7 @@ ALTER TABLE ONLY development.ips DROP CONSTRAINT ips_pkey;
 ALTER TABLE ONLY development.imported_items DROP CONSTRAINT imported_items_pkey;
 ALTER TABLE ONLY development.import_origins DROP CONSTRAINT import_origins_title_key;
 ALTER TABLE ONLY development.import_origins DROP CONSTRAINT import_origins_pkey;
+ALTER TABLE ONLY development.ignores DROP CONSTRAINT ignores_pkey;
 ALTER TABLE ONLY development.huddles DROP CONSTRAINT huddles_pkey;
 ALTER TABLE ONLY development.huddle_profiles DROP CONSTRAINT huddle_recipients_pkey;
 ALTER TABLE ONLY development.follows DROP CONSTRAINT follows_pkey;
@@ -343,6 +355,7 @@ DROP TABLE development.ips;
 DROP TABLE development.imported_items;
 DROP SEQUENCE development.import_origins_origin_id_seq;
 DROP TABLE development.import_origins;
+DROP TABLE development.ignores;
 DROP SEQUENCE development.huddles_huddle_id_seq;
 DROP TABLE development.huddles;
 DROP TABLE development.huddle_profiles;
@@ -877,6 +890,18 @@ BEGIN
         SELECT true
           INTO result.is_banned;
 
+        -- banned people can still read the site
+        IF inItemTypeId = 1 THEN
+            SELECT true
+              INTO result.can_read;
+        END IF;
+
+        -- banned people can still read their own profile
+        IF inItemTypeId = 3 AND inItemId = inProfileId THEN
+            SELECT true
+              INTO result.can_read;
+        END IF;
+
         RETURN result;
     END IF;
 
@@ -963,6 +988,14 @@ BEGIN
         WHEN 19 THEN -- Watcher
             -- Watchers do not belong to Microcosms
         END CASE;
+    END IF;
+
+    -- Are you banned? Defaults are good for you.
+    IF inMicrocosmId = 0 AND mid > 0 AND (SELECT is_banned(inSiteId, mid, inProfileId)) THEN
+        SELECT true
+          INTO result.is_banned;
+
+        RETURN result;
     END IF;
 
     -- Who are you
@@ -2406,6 +2439,19 @@ CREATE FUNCTION is_banned(site_id bigint DEFAULT 0, microcosm_id bigint DEFAULT 
     AS $_$
 DECLARE
 BEGIN
+
+    IF microcosm_id = 0 AND (SELECT EXISTS(
+        SELECT 1
+          FROM bans b
+          JOIN profiles p ON b.user_id = p.user_id  
+         WHERE b.site_id = $1 -- site_id
+           AND p.profile_id = $3 -- profile_id
+    )) THEN
+        RETURN true;
+    ELSE
+        RETURN false;
+    END IF;
+
 
     IF (SELECT COUNT(*) FROM roles rr WHERE rr.microcosm_id = $2) > 0 THEN
         RETURN (SELECT CASE WHEN COUNT(*) > 0 THEN true ELSE false END
@@ -4970,6 +5016,19 @@ ALTER SEQUENCE huddles_huddle_id_seq OWNED BY huddles.huddle_id;
 
 
 --
+-- Name: ignores; Type: TABLE; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE TABLE ignores (
+    profile_id bigint NOT NULL,
+    item_type_id bigint NOT NULL,
+    item_id bigint NOT NULL
+);
+
+
+ALTER TABLE development.ignores OWNER TO microcosm;
+
+--
 -- Name: import_origins; Type: TABLE; Schema: development; Owner: microcosm; Tablespace: 
 --
 
@@ -6241,7 +6300,7 @@ CREATE TABLE themes (
     theme_id bigint NOT NULL,
     title character varying(256) NOT NULL,
     logo_url character varying(2000) NOT NULL,
-    favicon_url character varying(2000) NOT NULL,
+    favicon_url character varying(2000) DEFAULT '/static/img/favico.png'::character varying NOT NULL,
     background_url character varying(2000) NOT NULL,
     background_color character varying(50) DEFAULT '#FFFFFF'::character varying NOT NULL,
     background_position character varying(6) DEFAULT 'cover'::character varying NOT NULL,
@@ -7005,6 +7064,14 @@ ALTER TABLE ONLY huddles
 
 
 --
+-- Name: ignores_pkey; Type: CONSTRAINT; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+ALTER TABLE ONLY ignores
+    ADD CONSTRAINT ignores_pkey PRIMARY KEY (profile_id, item_type_id, item_id);
+
+
+--
 -- Name: import_origins_pkey; Type: CONSTRAINT; Schema: development; Owner: microcosm; Tablespace: 
 --
 
@@ -7434,7 +7501,7 @@ CREATE INDEX comments_itemtypeandid_idx ON comments USING btree (item_type_id, i
 -- Name: comments_partial_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
 --
 
-CREATE INDEX comments_partial_idx ON comments USING btree (item_type_id, item_id, created);
+CREATE INDEX comments_partial_idx ON comments USING btree (item_type_id, item_id) WHERE (is_deleted IS FALSE);
 
 
 --
@@ -7480,6 +7547,13 @@ CREATE INDEX flags_deleted_idx ON flags USING btree (site_id, microcosm_is_delet
 
 
 --
+-- Name: flags_lastmodified2_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX flags_lastmodified2_idx ON flags USING btree (last_modified) WHERE (item_type_id = ANY (ARRAY[(3)::bigint, (5)::bigint, (6)::bigint, (7)::bigint, (9)::bigint]));
+
+
+--
 -- Name: flags_lastmodified_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
 --
 
@@ -7504,7 +7578,7 @@ CREATE INDEX flags_parentitemtypeidandparentitemid_idx ON flags USING btree (par
 -- Name: flags_partial_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
 --
 
-CREATE INDEX flags_partial_idx ON flags USING btree (microcosm_id, item_type_id, last_modified);
+CREATE INDEX flags_partial_idx ON flags USING btree (item_type_id, item_id) WHERE ((NOT item_is_deleted) AND (NOT item_is_moderated));
 
 
 --
@@ -7526,6 +7600,27 @@ CREATE INDEX huddles_huddleprofileid_idx ON huddle_profiles USING btree (huddle_
 --
 
 CREATE INDEX huddles_profileid_idx ON huddle_profiles USING btree (profile_id);
+
+
+--
+-- Name: ignores_item_type_id_item_id_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX ignores_item_type_id_item_id_idx ON ignores USING btree (item_type_id, item_id);
+
+
+--
+-- Name: ignores_profile_id_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX ignores_profile_id_idx ON ignores USING btree (profile_id);
+
+
+--
+-- Name: imported_items_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX imported_items_idx ON imported_items USING btree (origin_id, item_type_id, ((old_id)::bigint));
 
 
 --
@@ -7627,6 +7722,13 @@ CREATE INDEX polls_microcosmid_idx ON polls USING btree (microcosm_id);
 
 
 --
+-- Name: profiles_siteid_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX profiles_siteid_idx ON profiles USING btree (site_id);
+
+
+--
 -- Name: read_partial_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
 --
 
@@ -7652,6 +7754,27 @@ CREATE INDEX read_profileitemtypeandid_idx ON read USING btree (profile_id, item
 --
 
 CREATE INDEX read_profileitemtypeid_idx ON read USING btree (profile_id, item_type_id);
+
+
+--
+-- Name: revisionlinks_linkid_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX revisionlinks_linkid_idx ON revision_links USING btree (revision_id, link_id);
+
+
+--
+-- Name: revisions_comment_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX revisions_comment_idx ON revisions USING btree (comment_id) WHERE (is_current = true);
+
+
+--
+-- Name: revisions_profile_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX revisions_profile_idx ON revisions USING btree (profile_id);
 
 
 --
@@ -7714,7 +7837,7 @@ CREATE INDEX updates_itemtypeandid_idx ON updates USING btree (item_type_id, ite
 -- Name: updates_updatetypeid_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
 --
 
-CREATE INDEX updates_updatetypeid_idx ON updates USING btree (update_type_id);
+CREATE INDEX updates_updatetypeid_idx ON updates USING btree (update_type_id, created DESC);
 
 
 --
@@ -7736,6 +7859,13 @@ CREATE INDEX views_itemtype_idx ON views USING btree (item_type_id);
 --
 
 CREATE INDEX watchers_itemtypeandid_idx ON watchers USING btree (item_type_id, item_id);
+
+
+--
+-- Name: watchers_profileanditemtype_idx; Type: INDEX; Schema: development; Owner: microcosm; Tablespace: 
+--
+
+CREATE INDEX watchers_profileanditemtype_idx ON watchers USING btree (profile_id, item_type_id);
 
 
 --
@@ -8220,6 +8350,14 @@ ALTER TABLE ONLY huddles
 
 
 --
+-- Name: ignores_profile_id_fkey; Type: FK CONSTRAINT; Schema: development; Owner: microcosm
+--
+
+ALTER TABLE ONLY ignores
+    ADD CONSTRAINT ignores_profile_id_fkey FOREIGN KEY (profile_id) REFERENCES profiles(profile_id);
+
+
+--
 -- Name: import_origins_site_id_fkey; Type: FK CONSTRAINT; Schema: development; Owner: microcosm
 --
 
@@ -8521,6 +8659,14 @@ ALTER TABLE ONLY search_index
 
 ALTER TABLE ONLY search_index
     ADD CONSTRAINT search_index_parent_item_type_id_fkey FOREIGN KEY (parent_item_type_id) REFERENCES item_types(item_type_id);
+
+
+--
+-- Name: site_fkey; Type: FK CONSTRAINT; Schema: development; Owner: microcosm
+--
+
+ALTER TABLE ONLY site_stats
+    ADD CONSTRAINT site_fkey FOREIGN KEY (site_id) REFERENCES sites(site_id);
 
 
 --
