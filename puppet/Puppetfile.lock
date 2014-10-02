@@ -26,7 +26,7 @@ FORGE
 GIT
   remote: git://github.com/microcosm-cc/puppet-microcosm.git
   ref: master
-  sha: cdba0b3f612089316d2ee77a45200322a8259c97
+  sha: be3d0ec925cee764b1636f940635aa4dd156ceef
   specs:
     puppet-microcosm (0.0.1)
       jfryman-nginx (>= 0.0.10)

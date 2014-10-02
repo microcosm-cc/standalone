@@ -1,6 +1,10 @@
 import "secret.pp"
 
+# Determines whether the backend will send notifications, etc.
 $microcosm_environment = "dev"
+
+$frontend_listen_ip = "10.11.12.13"
+$frontend_listen_port = "80"
 
 $microcosm_backend_port = "8080"
 $microcosm_domain = "microco.sm"
@@ -34,6 +38,7 @@ node 'dev.microco.sm' {
 
     include microcosm
     include microcosm::api
+    include microcosm::frontend
 
     user { 'deployment':
         ensure     => 'present',
