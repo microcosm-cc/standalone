@@ -8,7 +8,10 @@ This consists of: PostgreSQL database, API (written in Go, deployed as a single 
 Getting started
 ---------------
 
-You will need vagrant >=1.5, puppet >=3.7.1 and librarian-puppet >=1.3.2.
+You will need: 
+ * Vagrant 1.5 or later ([download here](http://www.vagrantup.com/downloads.html))
+ * Puppet 3.7 or later ([download here](http://info.puppetlabs.com/download-puppet-open-source.html)]
+ * librarian-puppet 1.3 or later ([details here](https://github.com/rodjek/librarian-puppet)).
 
 Once you have these installed, change to the `puppet` directory and run:
 
