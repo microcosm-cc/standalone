@@ -3,7 +3,12 @@ Microcosm development VM
 
 This is a virtual machine, provisioned by puppet, which will run the entire Microcosm stack on a single VM. It's meant so that you can experiment with your own Microcosm instance in the simplest possible way.
 
-This consists of: PostgreSQL database, API (written in Go, deployed as a single binary), and frontend web app (written in Django).
+The stack consists of:
+
+* PostgreSQL database listening on localhost. See the `database` directory for schema and initial data
+* API written in Go, deployed as a single binary, listening on localhost 8080 by default
+* Frontend web app written in Django
+* Nginx to serve static files and act as a reverse proxy in front of the Django web app.
 
 Getting started
 ---------------
