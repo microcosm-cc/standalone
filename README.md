@@ -14,6 +14,7 @@ Getting started
 ---------------
 
 You will need: 
+ * Ruby 1.9.3p327
  * Vagrant 1.5 or later ([download here](http://www.vagrantup.com/downloads.html))
  * Puppet 3.7 or later ([download here](http://info.puppetlabs.com/download-puppet-open-source.html)]
  * librarian-puppet 1.3 or later ([details here](https://github.com/rodjek/librarian-puppet)).
